@@ -9,7 +9,7 @@ class HTMLNode():
         raise NotImplementedError("to_html method not yet created")
     
     def props_to_html(self):
-        for key, value in self.props:
+        for key, value in self.items():
             return f""" href="{key}" target="{value}"""
         
     def __repr__(self):

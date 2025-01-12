@@ -1,7 +1,18 @@
 from textnode import TextType, TextNode
 import re
-# For the time being this will not support nested markdown
 
+def text_to_textnodes(text):
+    text_nodes = [TextNode(text, TextType.TEXT),]
+    
+    text_nodes = split_nodes_delimiter(text_nodes, "**", TextType.BOLD)
+    text_nodes = split_nodes_delimiter(text_nodes, "*", TextType.ITALIC)
+    text_nodes = split_nodes_delimiter(text_nodes, "`", TextType.CODE)
+    text_nodes = split_nodes_image(text_nodes)
+    text_nodes = split_nodes_link(text_nodes)
+    
+    return text_nodes
+
+# For the time being this will not support nested markdown
 def split_nodes_delimiter(old_nodes, delimiter, text_type):
     text_nodes = []
     
@@ -31,11 +42,14 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
     return text_nodes
 
 def extract_markdown_images(text):
-    matches = re.findall(r"\!\[(.*?)\]\((.*?)\)", text)
+    pattern = r"!\[([^\[\]]*)\]\(([^\(\)]*)\)"
+    matches = re.findall(pattern, text)
     return matches
 
+
 def extract_markdown_links(text):
-    matches = re.findall(r"\[(.*?)\]\((.*?)\)", text)
+    pattern = r"(?<!!)\[([^\[\]]*)\]\(([^\(\)]*)\)"
+    matches = re.findall(pattern, text)
     return matches
 
 def split_nodes_image(old_nodes):
@@ -50,27 +64,20 @@ def split_nodes_image(old_nodes):
         while True:
             matches = extract_markdown_images(remaining_text)
             if not matches:
+                if remaining_text:
+                    text_nodes.append(TextNode(remaining_text, TextType.TEXT))
                 break
             
             alt_text, link_url = matches[0]
             parts = remaining_text.split(f'![{alt_text}]({link_url})', 1)
             
-            if parts[0] == '':
-                pass
-            else:
+            if parts[0]:
                 text_nodes.append(TextNode(parts[0], TextType.TEXT))
             
-            if alt_text == '' or link_url == '':
-                pass
-            else:
+            if alt_text and link_url:
                 text_nodes.append(TextNode(alt_text, TextType.IMAGE, link_url))
                 
             remaining_text = parts[1]
-
-    if remaining_text == '':
-        pass
-    else: 
-        text_nodes.append(TextNode(remaining_text, TextType.TEXT))
 
     return text_nodes
 
@@ -86,26 +93,19 @@ def split_nodes_link(old_nodes):
         while True:
             matches = extract_markdown_links(remaining_text)
             if not matches:
+                if remaining_text:
+                    text_nodes.append(TextNode(remaining_text, TextType.TEXT))
                 break
             
             link_text, link_url = matches[0]
             parts = remaining_text.split(f'[{link_text}]({link_url})', 1)
             
-            if parts[0] == '':
-                pass
-            else:
+            if parts[0]:
                 text_nodes.append(TextNode(parts[0], TextType.TEXT))
             
-            if link_text == '' or link_url == '':
-                pass
-            else:
+            if link_text and link_url:
                 text_nodes.append(TextNode(link_text, TextType.LINK, link_url))
 
             remaining_text = parts[1]
-
-    if remaining_text == '':
-        pass
-    else: 
-        text_nodes.append(TextNode(remaining_text, TextType.TEXT))
 
     return text_nodes
